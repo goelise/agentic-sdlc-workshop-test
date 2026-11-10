@@ -46,18 +46,7 @@ jobs:
         run: '[[ $NEON_AI_GATEWAY_TOKEN =~ [^[:space:]] && $NEON_AI_GATEWAY_BASE_URL =~ [^[:space:]/] ]] || { echo "::error::Add NEON_AI_GATEWAY_TOKEN and NEON_AI_GATEWAY_BASE_URL in Settings → Secrets and variables → Actions"; exit 1; }'
       - uses: actions/setup-node@v7
         with: {node-version: '22'}
-      # Bounded so a stalled Ubuntu mirror fails over in minutes instead of
-      # hanging until the job timeout (actions/runner-images#14594).
-      - name: Install tmux
-        timeout-minutes: 5
-        run: |
-          APT="-o Acquire::Retries=1 -o Acquire::http::Timeout=10 -o Acquire::https::Timeout=10"
-          if ! { timeout 90 sudo apt-get $APT update -q && timeout 90 sudo apt-get $APT install -y --no-install-recommends tmux; }; then
-            echo "::warning::Ubuntu mirrors slow or down; installing tmux from Homebrew"
-            HOMEBREW_NO_AUTO_UPDATE=1 /home/linuxbrew/.linuxbrew/bin/brew install tmux
-            sudo ln -sf /home/linuxbrew/.linuxbrew/bin/tmux /usr/local/bin/tmux
-          fi
-          tmux -V
+      - run: sudo apt-get update -qq && sudo apt-get install -y tmux
       - run: npm install -g @anthropic-ai/claude-code@2.1.283 @openai/codex@0.142.0 && pip install omnigent==0.20.0 && omnigent --version
       # Index the PR snapshot so git diff later contains only the proposed repair.
       - run: gh pr diff "$PR_NUMBER" -R "$GITHUB_REPOSITORY" > pr.diff && git apply --index pr.diff
